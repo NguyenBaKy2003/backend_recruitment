@@ -5,10 +5,12 @@ const {
   UserRole,
   Applicant,
   Skill,
+  Role,
   ApplicantSkill,
 } = require("../models");
 const bcrypt = require("bcrypt");
 const { validateToken } = require("../middlewares/AuthMiddleware");
+const { Op } = require("sequelize");
 const { sign } = require("jsonwebtoken");
 
 // Register Route
@@ -27,9 +29,18 @@ router.post("/register", async (req, res) => {
       create_by,
       skill,
       role_id,
-      // Thêm role_id vào đây
     } = req.body;
+    const existingUser = await User.findOne({
+      where: {
+        [Op.or]: [{ userName: userName }, { email: email }],
+      },
+    });
 
+    if (existingUser) {
+      return res
+        .status(400)
+        .json({ error: "Email or Username already exists" });
+    }
     if (!userName || !password || !email || !role_id) {
       return res
         .status(400)
@@ -79,8 +90,50 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// Login Route
-router.post("/login", async (req, res) => {
+// login user
+
+// // Login Route
+
+// router.post("/login/employer", async (req, res) => {
+//   try {
+//     const { userName, password } = req.body;
+
+//     if (!userName || !password) {
+//       return res
+//         .status(400)
+//         .json({ error: "Please provide all required fields" });
+//     }
+
+//     const user = await User.findOne({ where: { userName } });
+
+//     if (!user) {
+//       return res.status(404).json({ error: "User  Doesn't Exist" });
+//     }
+
+//     const match = await bcrypt.compare(password, user.password);
+
+//     if (!match) {
+//       return res
+//         .status(401)
+//         .json({ error: "Wrong Username And Password Combination" });
+//     }
+
+//     const accessToken = sign(
+//       { username: user.userName, id: user.id, role_id: user.role_id }, // Thêm role_id vào payload
+//       process.env.JWT_SECRET || "importantsecret"
+//     );
+//     res.json({
+//       token: accessToken,
+//       username: user.userName,
+//       id: user.id,
+//       role_id: user.role_id,
+//     });
+//   } catch (error) {
+//     res.status(400).json({ error: error.message });
+//   }
+// });
+
+router.post("/login/user", async (req, res) => {
   try {
     const { userName, password } = req.body;
 
@@ -89,11 +142,10 @@ router.post("/login", async (req, res) => {
         .status(400)
         .json({ error: "Please provide all required fields" });
     }
-
     const user = await User.findOne({ where: { userName } });
 
     if (!user) {
-      return res.status(404).json({ error: "User  Doesn't Exist" });
+      return res.status(404).json({ error: "User Doesn't Exist" });
     }
 
     const match = await bcrypt.compare(password, user.password);
@@ -104,27 +156,42 @@ router.post("/login", async (req, res) => {
         .json({ error: "Wrong Username And Password Combination" });
     }
 
+    // Get role_id from user_role table
+    const userRole = await UserRole.findOne({
+      where: { user_id: user.id },
+    });
+
+    if (!userRole) {
+      return res.status(400).json({ error: "User does not have a role" });
+    }
+
     const accessToken = sign(
-      { username: user.userName, id: user.id, role_id: user.role_id }, // Thêm role_id vào payload
+      { username: user.userName, id: user.id, role_id: userRole.role_id }, // Attach role_id to JWT
       process.env.JWT_SECRET || "importantsecret"
     );
+
     res.json({
       token: accessToken,
       username: user.userName,
       id: user.id,
-      role_id: user.role_id,
+      role_id: userRole.role_id, // Return role_id in response
     });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 });
+const { validateRole } = require("../middlewares/AuthMiddleware");
 
-// Auth Route
-router.get("/auth", validateToken, (req, res) => {
-  res.json(req.user);
+// Example: Route only accessible by users with role_id 1 (Admin)
+router.get("/admin", validateRole([1]), (req, res) => {
+  res.status(200).json({ message: "Welcome Admin!" });
 });
 
-// Basic Info Route
+// Example: Route only accessible by users with role_id 2 (User)
+router.get("/user", validateRole([2]), (req, res) => {
+  res.status(200).json({ message: "Welcome User!" });
+});
+
 router.get("/basicinfo/:id", async (req, res) => {
   try {
     const id = req.params.id;

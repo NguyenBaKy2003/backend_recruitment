@@ -1,14 +1,22 @@
 module.exports = (sequelize, DataTypes) => {
   const UserRole = sequelize.define(
-    "User Role",
+    "UserRole", // Correct model name (no space)
     {
       user_id: {
         type: DataTypes.INTEGER,
-        primaryKey: true,
+        allowNull: false,
+        references: {
+          model: "users",
+          key: "id",
+        },
       },
       role_id: {
         type: DataTypes.INTEGER,
-        primaryKey: true,
+        allowNull: false,
+        references: {
+          model: "roles",
+          key: "id",
+        },
       },
     },
     {
