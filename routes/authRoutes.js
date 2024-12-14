@@ -187,8 +187,6 @@ router.post("/register/employer", async (req, res) => {
   }
 });
 
-//
-
 router.post("/login/user", async (req, res) => {
   try {
     const { userName, password } = req.body;
@@ -221,15 +219,11 @@ router.post("/login/user", async (req, res) => {
         .json({ error: "Access denied. Only Users can log in here." });
     }
 
-    // Generate JWT token
+    // Generate the JWT token
     const accessToken = sign(
-      {
-        username: user.userName,
-        id: user.id,
-        role_id: userRole.role_id,
-      },
-      process.env.JWT_SECRET || "importantsecret", // Ensure this is stored securely
-      { expiresIn: "1h" } // Token expiration time
+      { userName: user.userName, id: user.id, role_id: userRole.role_id },
+      process.env.JWT_SECRET || "importantsecret"
+      // { expiresIn: "1h" } // Token expiration time
     );
 
     // Respond with token and user information
@@ -259,7 +253,7 @@ router.post("/login/employer", async (req, res) => {
     if (!userName || !password) {
       return res
         .status(400)
-        .json({ error: "Please provide all required fields" });
+        .json({ error: "Please provide all required fields." });
     }
 
     // Find the user by userName
@@ -267,7 +261,7 @@ router.post("/login/employer", async (req, res) => {
 
     // If user doesn't exist
     if (!user) {
-      return res.status(404).json({ error: "User doesn't exist" });
+      return res.status(404).json({ error: "User  doesn't exist." });
     }
 
     // Compare the password with the stored hashed password
@@ -277,33 +271,34 @@ router.post("/login/employer", async (req, res) => {
     if (!match) {
       return res
         .status(401)
-        .json({ error: "Wrong username and password combination" });
+        .json({ error: "Wrong username and password combination." });
     }
 
     // Check role from UserRole table (assuming role_id 1 is for employers)
     const userRole = await UserRole.findOne({ where: { user_id: user.id } });
 
-    // If the user is not an employer (role_id !== 2)
+    // If the user is not an employer (role_id !== 1)
     if (!userRole || userRole.role_id !== 1) {
       return res
         .status(403)
         .json({ error: "Access denied. Only employers can log in here." });
     }
 
-    // Fetch employer-specific information (you can adjust this to fit your schema)
+    // Fetch employer-specific information
     const employerInfo = await Employer.findOne({
       where: { user_id: user.id },
     });
 
     // If no employer info exists
     if (!employerInfo) {
-      return res.status(404).json({ error: "Employer information not found" });
+      return res.status(404).json({ error: "Employer information not found." });
     }
 
     // Generate the JWT token
     const accessToken = sign(
       { userName: user.userName, id: user.id, role_id: userRole.role_id },
       process.env.JWT_SECRET || "importantsecret"
+      // { expiresIn: "1h" } // Token expiration time
     );
 
     // Return the response with token and employer info
@@ -324,10 +319,10 @@ router.post("/login/employer", async (req, res) => {
         position: employerInfo.position,
       },
       employerId: user.id,
-      // Example employer info
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Login error:", error); // Log the error for debugging
+    res.status(500).json({ error: "Internal server error." });
   }
 });
 
