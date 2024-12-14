@@ -91,7 +91,7 @@ router.post("/register/user", async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 });
-
+//
 router.post("/register/employer", async (req, res) => {
   try {
     const {
@@ -187,6 +187,8 @@ router.post("/register/employer", async (req, res) => {
   }
 });
 
+//
+
 router.post("/login/user", async (req, res) => {
   try {
     const { userName, password } = req.body;
@@ -195,22 +197,20 @@ router.post("/login/user", async (req, res) => {
     if (!userName || !password) {
       return res
         .status(400)
-        .json({ error: "Please provide all required fields" });
+        .json({ error: "Please provide all required fields." });
     }
 
     // Find user by userName
     const user = await User.findOne({ where: { userName } });
 
     if (!user) {
-      return res.status(404).json({ error: "User doesn't exist" });
+      return res.status(404).json({ error: "User  doesn't exist." });
     }
 
     // Compare provided password with stored hash
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      return res
-        .status(401)
-        .json({ error: "Wrong username and password combination" });
+      return res.status(401).json({ error: "Invalid username or password." });
     }
 
     // Check user role
@@ -218,7 +218,7 @@ router.post("/login/user", async (req, res) => {
     if (!userRole || userRole.role_id !== 2) {
       return res
         .status(403)
-        .json({ error: "Access denied. Only User can log in here." });
+        .json({ error: "Access denied. Only Users can log in here." });
     }
 
     // Generate JWT token
@@ -228,17 +228,16 @@ router.post("/login/user", async (req, res) => {
         id: user.id,
         role_id: userRole.role_id,
       },
-      process.env.JWT_SECRET || "importantsecret",
+      process.env.JWT_SECRET || "importantsecret", // Ensure this is stored securely
       { expiresIn: "1h" } // Token expiration time
     );
 
     // Respond with token and user information
     res.json({
       token: accessToken,
+      userId: user.id,
       user: {
         userName: user.userName,
-        id: user.id,
-        role_id: userRole.role_id,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
@@ -248,7 +247,7 @@ router.post("/login/user", async (req, res) => {
     });
   } catch (error) {
     console.error("Login error:", error);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error." });
   }
 });
 
@@ -324,7 +323,7 @@ router.post("/login/employer", async (req, res) => {
         company_introduce: employerInfo.company_introduce,
         position: employerInfo.position,
       },
-      id: user.id,
+      employerId: user.id,
       // Example employer info
     });
   } catch (error) {

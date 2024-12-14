@@ -42,6 +42,7 @@ router.get("/users-and-employers", async (req, res) => {
         role_id: userRole.id || null, // Get the role_id from the Roles table
         role: userRole.role_name || "Unknown", // Get the role name, default to "Unknown"
         phone: user.phone,
+        address: user.address,
         employer: user.Employer || null, // Employer data if exists, otherwise null
       };
     });
@@ -91,6 +92,7 @@ router.get("/user/:id", async (req, res) => {
       role_id: userRole.id || null, // Get the role_id from the Roles table
       role: userRole.role_name || "Unknown", // Get the role name, default to "Unknown"
       phone: user.phone,
+      address: user.address,
       employer: user.Employer || null, // Employer data if exists, otherwise null
     };
 
