@@ -93,46 +93,57 @@ router.post("/register", async (req, res) => {
 // login user
 
 // // Login Route
+// Employer Login
+router.post("/login/employer", async (req, res) => {
+  try {
+    const { userName, password } = req.body;
 
-// router.post("/login/employer", async (req, res) => {
-//   try {
-//     const { userName, password } = req.body;
+    if (!userName || !password) {
+      return res
+        .status(400)
+        .json({ error: "Please provide all required fields" });
+    }
 
-//     if (!userName || !password) {
-//       return res
-//         .status(400)
-//         .json({ error: "Please provide all required fields" });
-//     }
+    const user = await User.findOne({ where: { userName } });
 
-//     const user = await User.findOne({ where: { userName } });
+    if (!user) {
+      return res.status(404).json({ error: "User doesn't exist" });
+    }
 
-//     if (!user) {
-//       return res.status(404).json({ error: "User  Doesn't Exist" });
-//     }
+    const match = await bcrypt.compare(password, user.password);
 
-//     const match = await bcrypt.compare(password, user.password);
+    if (!match) {
+      return res
+        .status(401)
+        .json({ error: "Wrong username and password combination" });
+    }
 
-//     if (!match) {
-//       return res
-//         .status(401)
-//         .json({ error: "Wrong Username And Password Combination" });
-//     }
+    // Check role from UserRole table
+    const userRole = await UserRole.findOne({ where: { user_id: user.id } });
 
-//     const accessToken = sign(
-//       { username: user.userName, id: user.id, role_id: user.role_id }, // Thêm role_id vào payload
-//       process.env.JWT_SECRET || "importantsecret"
-//     );
-//     res.json({
-//       token: accessToken,
-//       username: user.userName,
-//       id: user.id,
-//       role_id: user.role_id,
-//     });
-//   } catch (error) {
-//     res.status(400).json({ error: error.message });
-//   }
-// });
+    if (!userRole || userRole.role_id !== 1) {
+      return res
+        .status(403)
+        .json({ error: "Access denied. Only employers can log in here." });
+    }
 
+    const accessToken = sign(
+      { username: user.userName, id: user.id, role_id: userRole.role_id },
+      process.env.JWT_SECRET || "importantsecret"
+    );
+
+    res.json({
+      token: accessToken,
+      username: user.userName,
+      id: user.id,
+      role_id: userRole.role_id,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// User Login
 router.post("/login/user", async (req, res) => {
   try {
     const { userName, password } = req.body;
@@ -142,10 +153,11 @@ router.post("/login/user", async (req, res) => {
         .status(400)
         .json({ error: "Please provide all required fields" });
     }
+
     const user = await User.findOne({ where: { userName } });
 
     if (!user) {
-      return res.status(404).json({ error: "User Doesn't Exist" });
+      return res.status(404).json({ error: "User doesn't exist" });
     }
 
     const match = await bcrypt.compare(password, user.password);
@@ -153,35 +165,37 @@ router.post("/login/user", async (req, res) => {
     if (!match) {
       return res
         .status(401)
-        .json({ error: "Wrong Username And Password Combination" });
+        .json({ error: "Wrong username and password combination" });
     }
 
-    // Get role_id from user_role table
-    const userRole = await UserRole.findOne({
-      where: { user_id: user.id },
-    });
+    // Check role from UserRole table
+    const userRole = await UserRole.findOne({ where: { user_id: user.id } });
 
-    if (!userRole) {
-      return res.status(400).json({ error: "User does not have a role" });
+    if (!userRole || userRole.role_id !== 2) {
+      return res
+        .status(403)
+        .json({ error: "Access denied. Only regular users can log in here." });
     }
 
     const accessToken = sign(
-      { username: user.userName, id: user.id, role_id: userRole.role_id }, // Attach role_id to JWT
+      { userName: user.userName, id: user.id, role_id: userRole.role_id },
       process.env.JWT_SECRET || "importantsecret"
     );
 
     res.json({
       token: accessToken,
-      username: user.userName,
+      userName: user.userName,
       id: user.id,
-      role_id: userRole.role_id, // Return role_id in response
+      role_id: userRole.role_id,
     });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
+
 const { validateRole } = require("../middlewares/AuthMiddleware");
 
+module.exports = router;
 // Example: Route only accessible by users with role_id 1 (Admin)
 router.get("/admin", validateRole([1]), (req, res) => {
   res.status(200).json({ message: "Welcome Admin!" });

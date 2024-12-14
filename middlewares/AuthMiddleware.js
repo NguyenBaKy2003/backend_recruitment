@@ -1,21 +1,34 @@
 const { verify } = require("jsonwebtoken");
 
-const validateToken = (req, res, next) => {
-  const accessToken = req.header("accessToken");
+function validateToken(req, res, next) {
+  const authHeader = req.headers.authorization;
 
-  if (!accessToken) return res.json({ error: "User not logged in!" });
+  if (!authHeader) {
+    return res.status(401).json({
+      error: "No authorization token provided",
+      success: false,
+    });
+  }
+
+  const token = authHeader.split(" ")[1];
 
   try {
-    const validToken = verify(accessToken, "importantsecret");
-    req.user = validToken;
-    if (validToken) {
-      return next();
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({
+        error: "Token expired. Please log in again",
+        success: false,
+      });
     }
-  } catch (err) {
-    return res.json({ error: err });
+    return res.status(401).json({
+      error: "Invalid authentication token",
+      success: false,
+    });
   }
-};
-
+}
 const validateRole = (roles) => {
   return async (req, res, next) => {
     try {

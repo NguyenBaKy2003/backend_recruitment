@@ -9,7 +9,13 @@ const port = process.env.PORT || 3001;
 // Configure CORS
 const allowedOrigins =
   process.env.NODE_ENV === "development"
-    ? ["http://localhost:5173"] // Replace with actual production URL when needed
+    ? [
+        "http://localhost:5173",
+        "http://localhost:5175",
+        "http://localhost:5174",
+        "http://localhost:5173",
+        "https://cnpmtlujob.vercel.app",
+      ] // Replace with actual production URL when needed
     : [
         "http://localhost:5175",
         "http://localhost:5174",
@@ -43,10 +49,12 @@ app.use(bodyParser.json());
 // Import routes
 const authRoutes = require("./routes/authRoutes");
 const roleRoutes = require("./routes/roleRoutes");
+const userRoutes = require("./routes/userRoutes");
 
 // Use routes
 app.use("/api/auth", authRoutes);
 app.use("/api/roles", roleRoutes);
+app.use("/api/user", userRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
