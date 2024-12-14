@@ -324,41 +324,11 @@ router.post("/login/employer", async (req, res) => {
         company_introduce: employerInfo.company_introduce,
         position: employerInfo.position,
       },
+      id: user.id,
       // Example employer info
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
-  }
-});
-
-const { validateRole } = require("../middlewares/AuthMiddleware");
-
-module.exports = router;
-// Example: Route only accessible by users with role_id 1 (Admin)
-router.get("/admin", validateRole([1]), (req, res) => {
-  res.status(200).json({ message: "Welcome Admin!" });
-});
-
-// Example: Route only accessible by users with role_id 2 (User)
-router.get("/user", validateRole([2]), (req, res) => {
-  res.status(200).json({ message: "Welcome User!" });
-});
-
-router.get("/basicinfo/:id", async (req, res) => {
-  try {
-    const id = req.params.id;
-
-    const basicInfo = await User.findByPk(id, {
-      attributes: { exclude: ["password"] },
-    });
-
-    if (!basicInfo) {
-      return res.status(404).json({ error: "User  not found" });
-    }
-
-    res.json(basicInfo);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
   }
 });
 

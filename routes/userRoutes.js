@@ -51,5 +51,53 @@ router.get("/users-and-employers", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+router.get("/user/:id", async (req, res) => {
+  const { id } = req.params; // Get the user ID from the request parameters
+
+  try {
+    // Fetch user by ID, join with Employer and Role data
+    const user = await User.findOne({
+      where: { id: id }, // Filter by the provided ID
+      include: [
+        {
+          model: Employer, // Join with Employer to get employer-specific data if available
+          required: false, // If no employer data exists, still return the user data
+        },
+        {
+          model: Role, // Join with Role to get the role of the user (Employer, Employee, etc.)
+          attributes: ["role_name"],
+          through: {
+            model: UserRole,
+            attributes: ["role_id"], // Don't include UserRole attributes, just use Role data
+          },
+          required: true, // Ensure the user has a role
+        },
+      ],
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Format the response to include the user data and role info
+    const userRole = user.Roles[0] || {}; // Safely access the first role
+
+    const formattedUser = {
+      id: user.id,
+      userName: user.userName,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role_id: userRole.id || null, // Get the role_id from the Roles table
+      role: userRole.role_name || "Unknown", // Get the role name, default to "Unknown"
+      phone: user.phone,
+      employer: user.Employer || null, // Employer data if exists, otherwise null
+    };
+
+    res.json(formattedUser);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 module.exports = router;

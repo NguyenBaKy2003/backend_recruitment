@@ -2,9 +2,7 @@
 
 const express = require("express");
 const { User, Employer } = require("../models"); // Adjust according to your models
-
 const router = express.Router();
-
 // Get list of all employers
 router.get("/employers", async (req, res) => {
   try {
@@ -33,6 +31,68 @@ router.get("/employers", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+router.get("/employers/:id", async (req, res) => {
+  const { id } = req.params; // Get the ID from the request parameters
+
+  try {
+    // Find the employer by ID
+    const employer = await Employer.findOne({
+      where: { id: id }, // Use the id from the request params
+      include: {
+        model: User, // Join with the User model
+        attributes: [
+          "id",
+          "userName",
+          "email",
+          "firstName",
+          "lastName",
+          "phone",
+        ], // Select relevant user attributes
+      },
+    });
+
+    if (!employer) {
+      return res.status(404).json({ error: "Employer not found" });
+    }
+
+    // Respond with the employer data
+    res.json(employer);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+router.get("/employers/me", async (req, res) => {
+  const userId = req.user?.id; // Extract user ID from decoded token
+
+  try {
+    const employer = await Employer.findOne({
+      where: { userId }, // Match employer to the logged-in user
+      include: [
+        {
+          model: User,
+          attributes: [
+            "id",
+            "userName",
+            "email",
+            "firstName",
+            "lastName",
+            "phone",
+          ],
+        },
+      ],
+    });
+
+    if (!employer) {
+      return res.status(404).json({ error: "Employer not found" });
+    }
+
+    res.json(employer);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.delete("/employers/:id", async (req, res) => {
   const { id } = req.params; // Get the ID from the request parameters
 
