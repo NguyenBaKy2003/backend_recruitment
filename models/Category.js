@@ -19,8 +19,14 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue: DataTypes.NOW,
       },
       update_by: DataTypes.STRING,
-      code: DataTypes.STRING,
-      name: DataTypes.STRING,
+      code: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      name: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
     },
     {
       tableName: "categories",

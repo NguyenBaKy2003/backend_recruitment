@@ -50,11 +50,17 @@ app.use(bodyParser.json());
 const authRoutes = require("./routes/authRoutes");
 const roleRoutes = require("./routes/roleRoutes");
 const userRoutes = require("./routes/userRoutes");
+const serviceRoutes = require("./routes/serviceRouter");
+const categoriesRoutes = require("./routes/categoryRoutes");
+const employerRoutes = require("./routes/employerRoutes");
 
 // Use routes
 app.use("/api/auth", authRoutes);
 app.use("/api/roles", roleRoutes);
-app.use("/api/user", userRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/service", serviceRoutes);
+app.use("/api/category", categoriesRoutes);
+app.use("/api/employer", employerRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
