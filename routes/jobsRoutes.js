@@ -69,6 +69,59 @@ router.get("/jobs", async (req, res) => {
   }
 });
 
+router.get("/jobsall", async (req, res) => {
+  try {
+    // Fetch all jobs without any employer_id filter
+    const jobs = await Job.findAll({
+      include: [
+        { model: Category, attributes: ["name"] },
+        { model: Employer, attributes: ["company_name", "id"] },
+        {
+          model: Skill,
+          through: JobSkill,
+          attributes: ["id", "name"],
+        },
+      ],
+    });
+
+    // If no jobs were found
+    if (!jobs.length) {
+      return res.status(404).json({ error: "No jobs found." });
+    }
+
+    // Format and send the jobs with null checks
+    const formattedJobs = jobs.map((job) => {
+      const skillNames = job.Skills.map((skill) => skill.name);
+      const skillIds = job.Skills.map((skill) => skill.id);
+
+      return {
+        id: job.id,
+        title: job.title,
+        description: job.description,
+        location: job.location,
+        benefit: job.benefit,
+        type: job.type,
+        position: job.position,
+        application_deadline: job.application_deadline,
+        salary: Number(job.salary),
+        category: job.Category ? job.Category.name : "N/A", // Check for null
+        employer: job.Employer ? job.Employer.company_name : "Unknown", // Check for null
+        employerId: job.Employer ? job.Employer.id : null, // Check for null
+        skillNames,
+        skillIds,
+      };
+    });
+
+    res.status(200).json(formattedJobs);
+  } catch (error) {
+    // Log the full error message to better understand the issue
+    console.error("Error fetching jobs:", error);
+
+    // Return the error message in the response for debugging
+    res.status(500).json({ error: `Failed to fetch jobs: ${error.message}` });
+  }
+});
+
 // 2. Get Job by ID
 router.get("/job/:id", async (req, res) => {
   const { id } = req.params;
@@ -295,7 +348,11 @@ router.put("/job/:id", async (req, res) => {
 // 5. Delete Job
 router.delete("/job/:id", async (req, res) => {
   const { id } = req.params;
-  const employerId = req.body.employerId || req.query.employerId; // Ensure you pass employerId from frontend
+  const employerId = req.body.employerId || req.query.employerId; // Ensure employerId is sent from frontend
+
+  if (!employerId) {
+    return res.status(400).json({ error: "Employer ID is required" });
+  }
 
   try {
     // Find the job by its ID
@@ -306,7 +363,7 @@ router.delete("/job/:id", async (req, res) => {
     }
 
     // Check if the employerId matches
-    if (job.employerId !== employerId) {
+    if (job.employerId !== parseInt(employerId, 10)) {
       return res.status(403).json({ error: "Unauthorized to delete this job" });
     }
 
