@@ -83,16 +83,14 @@ Skill.belongsToMany(Applicant, {
 Job.belongsToMany(Skill, {
   through: JobSkill,
   foreignKey: "job_id",
-  onDelete: "CASCADE", // Cascade delete on JobSkill if Job is deleted
-  onUpdate: "CASCADE", // Cascade update on JobSkill if Job is updated
+  otherKey: "skill_id",
 });
+
 Skill.belongsToMany(Job, {
   through: JobSkill,
   foreignKey: "skill_id",
-  onDelete: "CASCADE", // Cascade delete on JobSkill if Skill is deleted
-  onUpdate: "CASCADE", // Cascade update on JobSkill if Skill is updated
+  otherKey: "job_id",
 });
-
 // Applicant and Job Relationship (Many-to-Many with Cascade Delete)
 Applicant.belongsToMany(Job, {
   through: ApplyJob,

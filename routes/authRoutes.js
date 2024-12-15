@@ -8,6 +8,7 @@ const {
   Employer,
   Position,
   Category,
+  Job,
   ApplicantSkill,
 } = require("../models");
 const bcrypt = require("bcrypt");
@@ -112,6 +113,7 @@ router.post("/register/employer", async (req, res) => {
       create_by,
       name,
       code,
+      employer_id,
     } = req.body;
 
     // Check if the user already exists with the same username or email
@@ -168,8 +170,11 @@ router.post("/register/employer", async (req, res) => {
       company_address,
       company_introduce,
       position,
-      service_id, // Store service_id for the employer
+      service_id,
       create_by,
+    });
+    await Job.create({
+      employer_id: newEmployer.id,
     });
 
     let newPosition = null;
@@ -327,7 +332,7 @@ router.post("/login/employer", async (req, res) => {
         company_introduce: employerInfo.company_introduce,
         position: employerInfo.position,
       },
-      employerId: user.id,
+      employerId: employerInfo.id,
     });
   } catch (error) {
     console.error("Login error:", error); // Log the error for debugging
