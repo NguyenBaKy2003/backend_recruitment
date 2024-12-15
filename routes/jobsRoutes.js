@@ -4,6 +4,7 @@ const { FLOAT } = require("sequelize");
 const router = express.Router();
 
 // 1. Get All Jobs
+
 router.get("/jobs", async (req, res) => {
   try {
     const { employer_id } = req.query; // Get employer_id from query parameters
@@ -294,16 +295,26 @@ router.put("/job/:id", async (req, res) => {
 // 5. Delete Job
 router.delete("/job/:id", async (req, res) => {
   const { id } = req.params;
+  const employerId = req.body.employerId || req.query.employerId; // Ensure you pass employerId from frontend
 
   try {
+    // Find the job by its ID
     const job = await Job.findByPk(id);
+
     if (!job) {
       return res.status(404).json({ error: "Job not found" });
     }
 
+    // Check if the employerId matches
+    if (job.employerId !== employerId) {
+      return res.status(403).json({ error: "Unauthorized to delete this job" });
+    }
+
+    // Delete the job
     await job.destroy();
     res.status(200).json({ message: "Job deleted successfully" });
   } catch (error) {
+    console.error("Error deleting job:", error);
     res.status(500).json({ error: "Failed to delete job" });
   }
 });
