@@ -126,7 +126,7 @@ Skill.belongsTo(Category, {
   onDelete: "CASCADE", // Cascade delete on Skill if Category is deleted
   onUpdate: "CASCADE", // Cascade update on Skill if Category is updated
 });
-
+// In your Employer model
 module.exports = {
   sequelize,
   Role,

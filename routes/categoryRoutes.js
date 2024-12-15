@@ -1,18 +1,18 @@
 // routes/categories.js
 const express = require("express");
 const router = express.Router();
-const { Category } = require("../models"); // Adjust the path as necessary
+const { Category, Position } = require("../models"); // Adjust the path as necessary
 
 // Create a new category
 router.post("/", async (req, res) => {
   try {
-    const { code, name, create_by } = req.body;
+    const { code, name, create_by, category_id } = req.body;
 
     // Validate input
     if (!code || !name || !create_by) {
       return res.status(400).json({ error: "All fields are required" });
     }
-
+    await Position.create({ category_id });
     const newCategory = await Category.create({ code, name, create_by });
     res.status(201).json(newCategory);
   } catch (error) {

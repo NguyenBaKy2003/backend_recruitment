@@ -21,7 +21,7 @@ module.exports = (sequelize, DataTypes) => {
       update_by: DataTypes.STRING,
       code: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
       },
       name: {
         type: DataTypes.STRING,

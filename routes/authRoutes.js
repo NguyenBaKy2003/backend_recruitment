@@ -7,7 +7,7 @@ const {
   Skill,
   Employer,
   Position,
-  Service,
+  Category,
   ApplicantSkill,
 } = require("../models");
 const bcrypt = require("bcrypt");
@@ -106,9 +106,12 @@ router.post("/register/employer", async (req, res) => {
       company_name,
       address,
       role_id,
+      category_id,
       position,
-      service_id, // Assuming service_id is passed in the request body
-      create_by, // Assuming 'create_by' is passed in request body
+      service_id,
+      create_by,
+      name,
+      code,
     } = req.body;
 
     // Check if the user already exists with the same username or email
@@ -153,6 +156,10 @@ router.post("/register/employer", async (req, res) => {
       role_id,
       create_by,
     });
+    await Category.create({
+      name,
+      create_by,
+    });
 
     // Create Employer record (assuming you have an 'Employer' table)
     const newEmployer = await Employer.create({
@@ -172,6 +179,8 @@ router.post("/register/employer", async (req, res) => {
         employer_id: newEmployer.id,
         name: position,
         create_by,
+        category_id,
+        code,
       });
     }
 
