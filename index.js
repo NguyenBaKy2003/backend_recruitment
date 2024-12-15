@@ -16,6 +16,7 @@ const allowedOrigins =
         "http://localhost:5173",
         "https://cnpmtlujob.vercel.app/",
         "http://localhost:5176",
+        "http://localhost:3001/api/employer/employers",
       ] // Replace with actual production URL when needed
     : [
         "http://localhost:5175",
