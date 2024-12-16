@@ -1,5 +1,15 @@
 const express = require("express");
-const { Job, Category, Employer, JobSkill, Skill } = require("../models");
+const {
+  Job,
+  Category,
+  Applicant,
+  Employer,
+  JobSkill,
+  ApplicantSkill,
+  Skill,
+  User,
+  ApplyJob,
+} = require("../models");
 const { FLOAT } = require("sequelize");
 const router = express.Router();
 
@@ -75,7 +85,7 @@ router.get("/jobsall", async (req, res) => {
     // Fetch all jobs without any employer_id filter
     const jobs = await Job.findAll({
       include: [
-        { model: Category, attributes: ["name"] },
+        { model: Category, attributes: ["name", "code"] },
         { model: Employer, attributes: ["company_name", "id"] },
         {
           model: Skill,
@@ -109,6 +119,7 @@ router.get("/jobsall", async (req, res) => {
         salary: Number(job.salary),
         category: job.Category ? job.Category.name : "N/A", // Check for null
         employer: job.Employer ? job.Employer.company_name : job.company_name, // Check for null
+        code: job.Category.code,
         employerId: job.Employer ? job.Employer.id : null, // Check for null
         skillNames,
         skillIds,
@@ -129,6 +140,7 @@ router.get("/jobsall", async (req, res) => {
 router.get("/job/:id", async (req, res) => {
   const { id } = req.params;
   try {
+    // Fetch the job by ID along with related models
     const job = await Job.findOne({
       where: { id },
       include: [
@@ -139,14 +151,25 @@ router.get("/job/:id", async (req, res) => {
           through: JobSkill,
           attributes: ["id", "name"],
         },
+        {
+          model: Applicant, // Include the Applicants
+          through: ApplyJob, // Junction table between Job and Applicant
+          include: [
+            {
+              model: User, // Include the User model to get firstName and lastName
+              attributes: ["firstName", "lastName", "userName"],
+            },
+          ],
+        },
       ],
     });
 
+    // Check if the job exists
     if (!job) {
       return res.status(404).json({ error: "Job not found" });
     }
 
-    // Format the job details
+    // Format the job details for response
     const formattedJob = {
       id: job.id,
       title: job.title,
@@ -156,18 +179,38 @@ router.get("/job/:id", async (req, res) => {
       type: job.type,
       position: job.position,
       application_deadline: job.application_deadline,
-      salary: job.salary,
+      create_at: job.create_at,
+      salary: Number(job.salary), // Ensure salary is a number
       requirements: job.requirements,
-      category: job.Category.name,
-      employer: job.Employer.company_name,
-      skillNames: job.Skills.map((skill) => skill.name),
-      skillIds: job.Skills.map((skill) => skill.id),
+      category: job.Category ? job.Category.name : "N/A", // Handle category being null
+      employer: job.Employer ? job.Employer.company_name : "Unknown", // Handle employer being null
+      skillNames:
+        job.Skills && job.Skills.length > 0
+          ? job.Skills.map((skill) => skill.name)
+          : [], // Ensure Skills is an array
+      skillIds:
+        job.Skills && job.Skills.length > 0
+          ? job.Skills.map((skill) => skill.id)
+          : [], // Ensure Skills is an array
+      applicants:
+        job.Applicants && job.Applicants.length > 0
+          ? job.Applicants.map((applicant) => ({
+              id: applicant.id,
+              userName: applicant.User ? applicant.User.userName : "Unknown", // Get userName from User model
+              email: applicant.User ? applicant.User.email : "Unknown", // Get email from User model
+              firstName: applicant.User ? applicant.User.firstName : "Unknown", // Get firstName from User model
+              lastName: applicant.User ? applicant.User.lastName : "Unknown", // Get lastName from User model
+            }))
+          : [], // Ensure Applicants is an array
     };
 
+    // Send the formatted job details as a response
     res.status(200).json(formattedJob);
   } catch (error) {
     console.error("Error fetching job details:", error);
-    res.status(500).json({ error: "Failed to fetch job details" });
+    res
+      .status(500)
+      .json({ error: "Failed to fetch job details: " + error.message });
   }
 });
 

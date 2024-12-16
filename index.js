@@ -60,6 +60,8 @@ const employerRoutes = require("./routes/employerRoutes");
 const jobsRoutes = require("./routes/jobsRoutes");
 const skillRoutes = require("./routes/skillRoutes");
 const positionRoutes = require("./routes/positionRoutes");
+const applyJobRoutes = require("./routes/applyJobRoutes");
+const applycantRoutes = require("./routes/applicantRoutes");
 // Use routes
 app.use("/api/auth", authRoutes);
 app.use("/api/roles", roleRoutes);
@@ -70,6 +72,8 @@ app.use("/api/employer", employerRoutes);
 app.use("/api/jobs", jobsRoutes);
 app.use("/api/positions", positionRoutes);
 app.use("/api/skills", skillRoutes);
+app.use("/api/applicant", applycantRoutes);
+app.use("/api/appli_job", applyJobRoutes);
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.message);

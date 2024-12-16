@@ -19,7 +19,7 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue: DataTypes.NOW,
       },
       update_by: DataTypes.STRING,
-      company_address: DataTypes.TEXT,
+      company_address: DataTypes.STRING,
       company_introduce: DataTypes.TEXT,
       company_name: DataTypes.STRING,
       position: DataTypes.STRING,

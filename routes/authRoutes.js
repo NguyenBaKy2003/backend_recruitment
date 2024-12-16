@@ -296,6 +296,12 @@ router.post("/login/user", async (req, res) => {
         .json({ error: "Access denied. Only Users can log in here." });
     }
 
+    // Find the applicant associated with the user
+    const applicant = await Applicant.findOne({ where: { user_id: user.id } });
+    if (!applicant) {
+      return res.status(404).json({ error: "Applicant not found." });
+    }
+
     // Generate the JWT token
     const accessToken = sign(
       { userName: user.userName, id: user.id, role_id: userRole.role_id },
@@ -303,10 +309,10 @@ router.post("/login/user", async (req, res) => {
       // { expiresIn: "1h" } // Token expiration time
     );
 
-    // Respond with token and user information
+    // Respond with token and user information, including applicant_id
     res.json({
       token: accessToken,
-      userId: user.id,
+      applicant_id: applicant.id, // Return the applicant_id
       user: {
         userName: user.userName,
         email: user.email,
