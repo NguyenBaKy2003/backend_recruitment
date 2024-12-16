@@ -157,7 +157,7 @@ router.post("/register/employer", async (req, res) => {
       !role_id ||
       !service_id ||
       !company_name ||
-      !name
+      !create_by
     ) {
       return res
         .status(400)
@@ -209,14 +209,17 @@ router.post("/register/employer", async (req, res) => {
       create_by,
     });
 
-    // Create category if provided
+    // Check if the category exists
     let newCategory = null;
-    if (name) {
-      newCategory = await Category.create({
-        name,
-        create_by,
-        code,
-      });
+    if (name && code) {
+      newCategory = await Category.findOne({ where: { name, code } });
+      if (!newCategory) {
+        newCategory = await Category.create({
+          name,
+          create_by,
+          code,
+        });
+      }
     }
 
     // Create employer record
@@ -232,15 +235,20 @@ router.post("/register/employer", async (req, res) => {
 
     let newPosition = null;
 
-    // If position and category_id are provided, create position entry
+    // Check if the position exists
     if (position && category_id) {
-      newPosition = await Position.create({
-        employer_id: newEmployer.id,
-        name: position,
-        create_by,
-        category_id,
-        code,
+      newPosition = await Position.findOne({
+        where: { name: position, category_id },
       });
+      if (!newPosition) {
+        newPosition = await Position.create({
+          employer_id: newEmployer.id,
+          name: position,
+          create_by,
+          category_id,
+          code,
+        });
+      }
     }
 
     // Return success response

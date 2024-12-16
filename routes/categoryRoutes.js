@@ -1,23 +1,26 @@
-// routes/categories.js
 const express = require("express");
 const router = express.Router();
-const { Category, Position } = require("../models"); // Adjust the path as necessary
+const { Category } = require("../models"); // Adjust the path to your models
 
 // Create a new category
 router.post("/", async (req, res) => {
   try {
-    const { code, name, create_by, category_id } = req.body;
+    const { create_by, code, name } = req.body;
 
-    // Validate input
-    if (!code || !name || !create_by) {
-      return res.status(400).json({ error: "All fields are required" });
+    if (!name || !create_by) {
+      return res.status(400).json({ error: "Missing required fields." });
     }
-    await Position.create({ category_id });
-    const newCategory = await Category.create({ code, name, create_by });
+
+    const newCategory = await Category.create({
+      create_by,
+      code,
+      name,
+    });
+
     res.status(201).json(newCategory);
   } catch (error) {
     console.error("Error creating category:", error);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Failed to create category." });
   }
 });
 
@@ -28,7 +31,7 @@ router.get("/", async (req, res) => {
     res.json(categories);
   } catch (error) {
     console.error("Error fetching categories:", error);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Failed to fetch categories." });
   }
 });
 
@@ -37,12 +40,12 @@ router.get("/:id", async (req, res) => {
   try {
     const category = await Category.findByPk(req.params.id);
     if (!category) {
-      return res.status(404).json({ error: "Category not found" });
+      return res.status(404).json({ error: "Category not found." });
     }
     res.json(category);
   } catch (error) {
     console.error("Error fetching category:", error);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Failed to fetch category." });
   }
 });
 
@@ -50,22 +53,23 @@ router.get("/:id", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const { code, name, update_by } = req.body;
+
     const category = await Category.findByPk(req.params.id);
     if (!category) {
-      return res.status(404).json({ error: "Category not found" });
+      return res.status(404).json({ error: "Category not found." });
     }
 
-    // Update fields
-    category.code = code || category.code;
-    category.name = name || category.name;
-    category.update_by = update_by || category.update_by;
-    category.update_at = new Date(); // Update the timestamp
+    await category.update({
+      code,
+      name,
+      update_by,
+      update_at: new Date(), // Update the timestamp
+    });
 
-    await category.save();
     res.json(category);
   } catch (error) {
     console.error("Error updating category:", error);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Failed to update category." });
   }
 });
 
@@ -74,13 +78,18 @@ router.delete("/:id", async (req, res) => {
   try {
     const category = await Category.findByPk(req.params.id);
     if (!category) {
-      return res.status(404).json({ error: "Category not found" });
+      return res.status(404).json({ error: "Category not found." });
     }
-    await category.destroy();
-    res.status(204).send(); // No content
+
+    await category.update({
+      delete_at: new Date(), // Set the deletion timestamp
+      delete_by: req.body.delete_by, // Assuming you pass the user who deleted it
+    });
+
+    res.json({ message: "Category deleted successfully." });
   } catch (error) {
     console.error("Error deleting category:", error);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Failed to delete category." });
   }
 });
 
