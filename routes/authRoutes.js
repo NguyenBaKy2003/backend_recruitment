@@ -17,6 +17,7 @@ const { Op } = require("sequelize");
 const { sign } = require("jsonwebtoken");
 
 // Register Route
+
 router.post("/register/user", async (req, res) => {
   try {
     const {
@@ -26,6 +27,7 @@ router.post("/register/user", async (req, res) => {
       firstName,
       lastName,
       phone,
+      category_id,
       experience,
       education,
       address,
@@ -33,6 +35,28 @@ router.post("/register/user", async (req, res) => {
       skill,
       role_id,
     } = req.body;
+
+    // Validate required fields
+    if (!userName || !password || !email || !role_id) {
+      return res
+        .status(400)
+        .json({ error: "Please provide all required fields" });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: "Invalid email format" });
+    }
+
+    // Validate password strength (example: at least 8 characters)
+    if (password.length < 8) {
+      return res
+        .status(400)
+        .json({ error: "Password must be at least 8 characters long" });
+    }
+
+    // Check for existing user
     const existingUser = await User.findOne({
       where: {
         [Op.or]: [{ userName: userName }, { email: email }],
@@ -44,12 +68,8 @@ router.post("/register/user", async (req, res) => {
         .status(400)
         .json({ error: "Email or Username already exists" });
     }
-    if (!userName || !password || !email || !role_id) {
-      return res
-        .status(400)
-        .json({ error: "Please provide all required fields" });
-    }
 
+    // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await User.create({
       userName,
@@ -61,8 +81,8 @@ router.post("/register/user", async (req, res) => {
       phone,
       create_by,
       status: "active",
-      // Lưu role_id vào User
     });
+
     await UserRole.create({ user_id: newUser.id, role_id });
 
     const newApplicant = await Applicant.create({
@@ -72,18 +92,32 @@ router.post("/register/user", async (req, res) => {
       create_by,
     });
 
-    if (skill && skill.length > 0) {
-      const skillPromises = skill.map(async (name) => {
-        let skill = await Skill.findOne({ where: { name } });
-        if (!skill) {
-          skill = await Skill.create({ name });
+    // Validate skills
+    if (skill && Array.isArray(skill) && skill.length > 0) {
+      const skillPromises = skill.map(async (skillObj) => {
+        const { skill: skillName, category_id } = skillObj; // Destructure skill and category_id
+
+        if (!skillName) {
+          throw new Error("Skill name cannot be empty");
         }
+
+        // Check if the skill already exists
+        let skillEntry = await Skill.findOne({ where: { name: skillName } });
+
+        // If the skill does not exist, create it with the provided category_id
+        if (!skillEntry) {
+          skillEntry = await Skill.create({ name: skillName, category_id });
+        }
+
+        // Create the association between the applicant and the skill
         await ApplicantSkill.create({
           applicant_id: newApplicant.id,
-          skill_id: skill.id,
+          skill_id: skillEntry.id,
           create_by,
         });
       });
+
+      // Wait for all skill promises to resolve
       await Promise.all(skillPromises);
     }
 
@@ -94,32 +128,55 @@ router.post("/register/user", async (req, res) => {
 });
 //
 router.post("/register/employer", async (req, res) => {
-  try {
-    const {
-      userName,
-      password,
-      email,
-      firstName,
-      lastName,
-      phone,
-      company_address,
-      company_introduce,
-      company_name,
-      address,
-      role_id,
-      category_id,
-      position,
-      service_id,
-      create_by,
-      name,
-      code,
-      employer_id,
-    } = req.body;
+  const {
+    userName,
+    password,
+    email,
+    firstName,
+    lastName,
+    phone,
+    company_address,
+    company_introduce,
+    company_name,
+    address,
+    role_id,
+    category_id,
+    position,
+    service_id,
+    create_by,
+    name,
+    code,
+  } = req.body;
 
-    // Check if the user already exists with the same username or email
+  try {
+    // Validate required fields
+    if (
+      !userName ||
+      !password ||
+      !email ||
+      !role_id ||
+      !service_id ||
+      !company_name ||
+      !name
+    ) {
+      return res
+        .status(400)
+        .json({ error: "Please provide all required fields" });
+    }
+
+    // Validate email format
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: "Invalid email format" });
+    }
+
+    // Check if the user already exists with the same username or email (case insensitive)
     const existingUser = await User.findOne({
       where: {
-        [Op.or]: [{ userName: userName }, { email: email }],
+        [Op.or]: [
+          { userName: userName },
+          { email: email.toLowerCase() }, // Ensure email is checked in lowercase
+        ],
       },
     });
 
@@ -129,20 +186,13 @@ router.post("/register/employer", async (req, res) => {
         .json({ error: "Email or Username already exists" });
     }
 
-    // Validate if required fields are provided
-    if (!userName || !password || !email || !role_id || !service_id) {
-      return res
-        .status(400)
-        .json({ error: "Please provide all required fields" });
-    }
-
-    // Hash password before storing
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create new user
     const newUser = await User.create({
       userName,
-      email,
+      email: email.toLowerCase(), // Store email in lowercase
       password: hashedPassword,
       firstName,
       lastName,
@@ -152,18 +202,24 @@ router.post("/register/employer", async (req, res) => {
       status: "active",
     });
 
-    // Assign role to user (UserRole table)
+    // Create user role
     await UserRole.create({
       user_id: newUser.id,
       role_id,
       create_by,
     });
-    await Category.create({
-      name,
-      create_by,
-    });
 
-    // Create Employer record (assuming you have an 'Employer' table)
+    // Create category if provided
+    let newCategory = null;
+    if (name) {
+      newCategory = await Category.create({
+        name,
+        create_by,
+        code,
+      });
+    }
+
+    // Create employer record
     const newEmployer = await Employer.create({
       user_id: newUser.id,
       company_name,
@@ -173,13 +229,11 @@ router.post("/register/employer", async (req, res) => {
       service_id,
       create_by,
     });
-    await Job.create({
-      employer_id: newEmployer.id,
-    });
 
     let newPosition = null;
-    // If position is provided, create a Position entry
-    if (position) {
+
+    // If position and category_id are provided, create position entry
+    if (position && category_id) {
       newPosition = await Position.create({
         employer_id: newEmployer.id,
         name: position,
@@ -189,14 +243,15 @@ router.post("/register/employer", async (req, res) => {
       });
     }
 
-    // Return the response
+    // Return success response
     res.status(201).json({
-      user: newUser,
+      user: newUser.toJSON(), // Use toJSON to avoid sending sensitive data
       employer: newEmployer,
       position: newPosition,
+      category: newCategory,
     });
   } catch (error) {
-    console.error("Error during employer registration:", error); // Improved logging for debugging
+    console.error("Error during employer registration:", error);
     res.status(400).json({ error: error.message });
   }
 });

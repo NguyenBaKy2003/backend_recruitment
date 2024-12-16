@@ -51,6 +51,7 @@ router.get("/jobs", async (req, res) => {
         position: job.position,
         application_deadline: job.application_deadline,
         salary: Number(job.salary),
+        requirements: job.requirements,
         category: job.Category ? job.Category.name : "N/A", // Check for null
         employer: job.Employer ? job.Employer.company_name : "Unknown", // Check for null
         employerId: job.Employer ? job.Employer.id : null, // Check for null
@@ -101,11 +102,14 @@ router.get("/jobsall", async (req, res) => {
         location: job.location,
         benefit: job.benefit,
         type: job.type,
+        create_at: job.create_at,
         position: job.position,
         application_deadline: job.application_deadline,
+        requirements: job.requirements,
+
         salary: Number(job.salary),
         category: job.Category ? job.Category.name : "N/A", // Check for null
-        employer: job.Employer ? job.Employer.company_name : "Unknown", // Check for null
+        employer: job.Employer ? job.Employer.company_name : job.company_name, // Check for null
         employerId: job.Employer ? job.Employer.id : null, // Check for null
         skillNames,
         skillIds,
@@ -154,6 +158,7 @@ router.get("/job/:id", async (req, res) => {
       position: job.position,
       application_deadline: job.application_deadline,
       salary: job.salary,
+      requirements: job.requirements,
       category: job.Category.name,
       employer: job.Employer.company_name,
       skillNames: job.Skills.map((skill) => skill.name),
@@ -173,7 +178,7 @@ router.post("/jobadd", async (req, res) => {
     title,
     description,
     location,
-    benefit, // Ensure this matches your database model
+    benefit,
     type,
     position,
     application_deadline,
@@ -181,7 +186,7 @@ router.post("/jobadd", async (req, res) => {
     employer_id,
     requirements,
     salary,
-    skill_id,
+    skill_id, // Array of skill_ids
   } = req.body;
 
   try {
@@ -192,12 +197,21 @@ router.post("/jobadd", async (req, res) => {
         .json({ error: "Please provide all required fields" });
     }
 
+    // Optional: Validate salary and application_deadline if provided
+    if (salary && isNaN(salary)) {
+      return res.status(400).json({ error: "Salary must be a number" });
+    }
+
+    if (application_deadline && isNaN(Date.parse(application_deadline))) {
+      return res.status(400).json({ error: "Invalid application deadline" });
+    }
+
     // Create the new job
     const newJob = await Job.create({
       title,
       description,
       location,
-      benefit, // Ensure this matches your database model
+      benefit,
       requirements,
       type,
       position,
@@ -207,25 +221,34 @@ router.post("/jobadd", async (req, res) => {
       salary,
     });
 
-    // Associate job with skill(s) (if skill_id is provided as an array)
+    // Associate job with skills, including their category_id if needed
     if (skill_id && Array.isArray(skill_id)) {
+      // Check if each skill exists and if the category_id matches
       const jobSkills = skill_id.map((id) => ({
         job_id: newJob.id,
         skill_id: id,
+        category_id: category_id, // Add category_id to job skills if necessary
       }));
+
       await JobSkill.bulkCreate(jobSkills); // Use bulkCreate for efficiency
     }
 
+    // Optionally fetch the associated skills to include in the response
+    const associatedSkills = skill_id || [];
+
     res.status(201).json({
       message: "Job created successfully",
-      job: newJob, // Include the job in the response
-      skill_id: skill_id || [], // Optionally include the associated skills
+      job: {
+        ...newJob.toJSON(), // Convert to plain object
+        skills: associatedSkills, // Include the associated skills
+      },
     });
   } catch (error) {
     console.error("Error creating job:", error.message); // Log the error for debugging
     res.status(500).json({ error: "Failed to create job" });
   }
 });
+
 // 4. Update Job
 router.put("/job/:id", async (req, res) => {
   const { id } = req.params;
