@@ -63,11 +63,21 @@ router.get("/employers/:id", async (req, res) => {
             "firstName",
             "lastName",
             "phone",
+            "address",
           ],
         },
         {
           model: Job, // Join with the Job model
-          attributes: ["id", "benefit", "position", "title", "type", "salary"],
+          attributes: [
+            "id",
+            "application_deadline",
+            "benefit",
+            "position",
+            "title",
+            "location",
+            "type",
+            "salary",
+          ],
           include: [
             {
               model: Category, // Join with the Category model through Job
