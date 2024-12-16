@@ -39,7 +39,16 @@ router.get("/applicants", async (req, res) => {
         },
         {
           model: User, // Include User information
-          attributes: ["id", "userName", "email", "firstName", "lastName"], // Specify the fields you want to return
+          attributes: [
+            "id",
+            "userName",
+            "email",
+            "firstName",
+            "lastName",
+            "phone",
+            "address",
+            "status",
+          ], // Specify the fields you want to return
         },
       ],
     });
@@ -69,7 +78,15 @@ router.get("/applicants/:id", async (req, res) => {
         },
         {
           model: User, // Include User information
-          attributes: ["id", "userName", "email", "firstName", "lastName"], // Specify the fields you want to return
+          attributes: [
+            "id",
+            "userName",
+            "email",
+            "firstName",
+            "lastName",
+            "phone",
+            "address",
+          ], // Specify the fields you want to return
         },
       ],
     });

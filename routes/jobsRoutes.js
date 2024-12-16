@@ -157,7 +157,13 @@ router.get("/job/:id", async (req, res) => {
           include: [
             {
               model: User, // Include the User model to get firstName and lastName
-              attributes: ["firstName", "lastName", "userName"],
+              attributes: [
+                "firstName",
+                "lastName",
+                "userName",
+                "phone",
+                "address",
+              ],
             },
           ],
         },
