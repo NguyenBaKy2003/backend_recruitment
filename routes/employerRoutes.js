@@ -1,5 +1,5 @@
 // routes/employer.js
-
+const bcrypt = require("bcrypt");
 const express = require("express");
 const { User, Employer, Job, Category } = require("../models"); // Adjust according to your models
 // const Category = require("../models/Category");
@@ -67,7 +67,7 @@ router.get("/employers/:id", async (req, res) => {
         },
         {
           model: Job, // Join with the Job model
-          attributes: ["benefit"],
+          attributes: ["id", "benefit", "position", "title", "type", "salary"],
           include: [
             {
               model: Category, // Join with the Category model through Job
@@ -170,16 +170,19 @@ router.put("/change-password/:id", async (req, res) => {
   const employerId = req.params.id;
 
   try {
-    const employer = await Employer.findById(employerId);
+    // Use findByPk to find the employer by primary key
+    const employer = await Employer.findByPk(employerId);
     if (!employer) {
       return res.status(404).json({ error: "Employer not found." });
     }
 
+    // Compare the current password
     const isMatch = await bcrypt.compare(currentPassword, employer.password);
     if (!isMatch) {
       return res.status(400).json({ error: "Current password is incorrect." });
     }
 
+    // Hash the new password and save it
     const hashedNewPassword = await bcrypt.hash(newPassword, 10);
     employer.password = hashedNewPassword;
     await employer.save();

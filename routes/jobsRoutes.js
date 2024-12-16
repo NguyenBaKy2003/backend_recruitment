@@ -106,7 +106,6 @@ router.get("/jobsall", async (req, res) => {
         position: job.position,
         application_deadline: job.application_deadline,
         requirements: job.requirements,
-
         salary: Number(job.salary),
         category: job.Category ? job.Category.name : "N/A", // Check for null
         employer: job.Employer ? job.Employer.company_name : job.company_name, // Check for null
