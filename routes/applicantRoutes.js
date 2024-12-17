@@ -1,6 +1,13 @@
 const express = require("express");
 const router = express.Router();
-const { Applicant, ApplicantSkill, Skill, User } = require("../models"); // Adjust the path as necessary
+const {
+  Applicant,
+  ApplyJob,
+  ApplicantSkill,
+  Job,
+  Skill,
+  User,
+} = require("../models"); // Adjust the path as necessary
 
 // Create a new applicant
 router.post("/applicants", async (req, res) => {
@@ -60,7 +67,6 @@ router.get("/applicants", async (req, res) => {
   }
 });
 
-// Get a single applicant by ID
 // Get a single applicant by ID with user and skills information
 router.get("/applicants/:id", async (req, res) => {
   const { id } = req.params;
@@ -87,6 +93,10 @@ router.get("/applicants/:id", async (req, res) => {
             "phone",
             "address",
           ], // Specify the fields you want to return
+        },
+        {
+          model: Job,
+          attributes: ["id"],
         },
       ],
     });

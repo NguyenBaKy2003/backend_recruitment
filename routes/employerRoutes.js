@@ -136,6 +136,7 @@ router.put("/employers/:id", async (req, res) => {
   const {
     userName,
     email,
+    position,
     firstName,
     lastName,
     phone,
@@ -157,6 +158,8 @@ router.put("/employers/:id", async (req, res) => {
     // Update the employer's details
     await employer.update({
       company_name,
+      position,
+
       company_address,
       company_introduce,
     });
@@ -167,6 +170,7 @@ router.put("/employers/:id", async (req, res) => {
         userName,
         email,
         firstName,
+
         lastName,
         phone,
       });
