@@ -80,7 +80,6 @@ router.put("/:id", async (req, res) => {
     res.status(500).json({ error: "Failed to update service." });
   }
 });
-
 // Delete a service by ID
 router.delete("/:id", async (req, res) => {
   try {

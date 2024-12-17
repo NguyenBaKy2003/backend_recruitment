@@ -1,7 +1,8 @@
 // routes/employer.js
 const bcrypt = require("bcrypt");
 const express = require("express");
-const { User, Employer, Job, Category } = require("../models"); // Adjust according to your models
+const { User, Employer, Job, Category, Service } = require("../models"); // Adjust according to your models
+
 // const Category = require("../models/Category");
 const router = express.Router();
 // Get list of all employers
@@ -20,6 +21,10 @@ router.get("/employers", async (req, res) => {
             "lastName",
             "phone",
           ],
+        },
+        {
+          model: Service,
+          attributes: ["jobPostNumber", "service_name", "price"],
         },
         {
           model: Job, // Join with the Job model
