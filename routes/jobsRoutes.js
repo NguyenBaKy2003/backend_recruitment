@@ -17,17 +17,16 @@ const router = express.Router();
 
 router.get("/jobs", async (req, res) => {
   try {
-    const { employer_id } = req.query; // Get employer_id from query parameters
-    // If no employer_id is provided, return an error
+    const { employer_id } = req.query;
+
+    // Validate employer_id
     if (!employer_id) {
       return res.status(400).json({ error: "Please provide an employer_id." });
     }
 
     // Fetch jobs for the specified employer_id
     const jobs = await Job.findAll({
-      where: {
-        employer_id: employer_id, // Use dynamic employer_id from query params
-      },
+      where: { employer_id },
       include: [
         { model: Category, attributes: ["name"] },
         { model: Employer, attributes: ["company_name", "id"] },
@@ -36,20 +35,27 @@ router.get("/jobs", async (req, res) => {
           through: JobSkill,
           attributes: ["id", "name"],
         },
+        {
+          model: Applicant,
+          through: ApplyJob,
+          attributes: ["id"],
+        },
       ],
     });
 
-    // If no jobs were found for the given employer_id
-    if (!jobs.length) {
+    // Handle case when no jobs are found
+    if (jobs.length === 0) {
       return res
         .status(404)
         .json({ error: `No jobs found for employer_id ${employer_id}.` });
     }
 
-    // Format and send the jobs with null checks
+    // Format the response
     const formattedJobs = jobs.map((job) => {
-      const skillNames = job.Skills.map((skill) => skill.name);
-      const skillIds = job.Skills.map((skill) => skill.id);
+      const skillNames = job.Skills?.map((skill) => skill.name) || [];
+      const skillIds = job.Skills?.map((skill) => skill.id) || [];
+      const applicantIds =
+        job.Applicants?.map((applicant) => applicant.id) || [];
 
       return {
         id: job.id,
@@ -62,21 +68,24 @@ router.get("/jobs", async (req, res) => {
         application_deadline: job.application_deadline,
         salary: Number(job.salary),
         requirements: job.requirements,
-        category: job.Category ? job.Category.name : "N/A", // Check for null
-        employer: job.Employer ? job.Employer.company_name : "Unknown", // Check for null
-        employerId: job.Employer ? job.Employer.id : null, // Check for null
+        category: job.Category?.name || "N/A", // Null-safe access
+        employer: job.Employer?.company_name || "Unknown", // Null-safe access
+        employerId: job.Employer?.id || null, // Null-safe access
         skillNames,
         skillIds,
+        applicantIds, // Corrected naming
       };
     });
 
     res.status(200).json(formattedJobs);
   } catch (error) {
-    // Log the full error message to better understand the issue
+    // Log the error for debugging
     console.error("Error fetching jobs:", error);
 
-    // Return the error message in the response for debugging
-    res.status(500).json({ error: `Failed to fetch jobs: ${error.message}` });
+    // Send a generic error message to the client
+    res
+      .status(500)
+      .json({ error: "Failed to fetch jobs. Please try again later." });
   }
 });
 
